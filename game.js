@@ -386,11 +386,9 @@ function resizeCanvas() {
 
     // 地面の位置を設定
     if (game.isMobile) {
-        // モバイル時：キャラの下ラインがプレゼント表示の高さに合わせるように調整
-        // プレゼント表示は画面下から20px、touchControls領域も確保
-        const touchControlsHeight = width <= 480 ? 100 : 120;
-        const presentsDisplayMargin = 20;  // プレゼント表示は displayHeight - 20
-        player.groundY = height - touchControlsHeight - presentsDisplayMargin - player.height;
+        // モバイル時：キャラの下ラインがプレゼント表示の高さに合わせる
+        // プレゼント表示は displayHeight - 20 の位置
+        player.groundY = displayHeight - 20;
     } else {
         // PC時：通常計算
         player.groundY = height - player.height;
