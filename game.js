@@ -366,7 +366,8 @@ function resizeCanvas() {
     if (width <= 768) {
         game.isMobile = true;
         game.scrollSpeed = (game.baseScrollSpeed / 3) * 1.1;  // 1/3の速度から10%アップ
-        player.jumpPower = player.baseJumpPower * 2;  // ジャンプ力を2倍に
+        // 二段ジャンプで背景の95%高さに到達するように調整
+        player.jumpPower = -Math.sqrt(height * 0.57);
         game.bgZoom = 1.25;  // 背景を1.25倍に拡大（左右10%ずつカット）
     } else {
         game.isMobile = false;
@@ -385,10 +386,11 @@ function resizeCanvas() {
 
     // 地面の位置を設定
     if (game.isMobile) {
-        // モバイル時：キャラの下ラインがボタン領域より上になるように調整
-        // touchControlsは最小120px高さ（768px以下）または100px高さ（480px以下）
+        // モバイル時：キャラの下ラインがプレゼント表示の高さに合わせるように調整
+        // プレゼント表示は画面下から20px、touchControls領域も確保
         const touchControlsHeight = width <= 480 ? 100 : 120;
-        player.groundY = height - touchControlsHeight - player.height;
+        const presentsDisplayMargin = 20;  // プレゼント表示は displayHeight - 20
+        player.groundY = height - touchControlsHeight - presentsDisplayMargin - player.height;
     } else {
         // PC時：通常計算
         player.groundY = height - player.height;
