@@ -37,7 +37,8 @@ const player = {
     height: 160, // 実際のサイズ（スケール後）
     velocityY: 0,
     gravity: 0.6,
-    jumpPower: -18,
+    baseJumpPower: -18,  // 基本ジャンプ力
+    jumpPower: -18,  // 実際のジャンプ力（モバイルで調整）
     moveSpeed: 5,
     isJumping: false,
     canDoubleJump: true,
@@ -273,18 +274,31 @@ function resizeCanvas() {
         height = width / aspectRatio;
     }
 
-    game.canvas.width = width;
-    game.canvas.height = height;
+    // デバイスのピクセル比を取得（Retina対応）
+    const dpr = window.devicePixelRatio || 1;
+
+    // Canvas の実際の解像度を高く設定
+    game.canvas.width = width * dpr;
+    game.canvas.height = height * dpr;
+
+    // CSS上の表示サイズは通常サイズ
+    game.canvas.style.width = width + 'px';
+    game.canvas.style.height = height + 'px';
+
+    // コンテキストをスケール
+    game.ctx.scale(dpr, dpr);
 
     // スケール倍率を計算（基準は1200px幅）
     const baseWidth = 1200;
     game.scale = width / baseWidth;
 
-    // スマホ（768px以下）の場合、スクロール速度を1/3に
+    // スマホ（768px以下）の場合、スクロール速度を1/3に、ジャンプ力を半分に
     if (width <= 768) {
         game.scrollSpeed = game.baseScrollSpeed / 3;
+        player.jumpPower = player.baseJumpPower / 2;  // モバイルはジャンプ力半分
     } else {
         game.scrollSpeed = game.baseScrollSpeed;
+        player.jumpPower = player.baseJumpPower;  // PCは通常のジャンプ力
     }
 
     // プレイヤーのサイズをスケールに応じて調整
@@ -954,9 +968,25 @@ function render() {
     const ctx = game.ctx;
     const canvas = game.canvas;
 
+    // Canvas をクリア
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // デバイスピクセル比でスケール
+    const dpr = window.devicePixelRatio || 1;
+    ctx.scale(dpr, dpr);
+
+    // 画像スムージングを有効化（高品質レンダリング）
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+
+    // 表示サイズを取得
+    const displayWidth = canvas.clientWidth || (canvas.width / dpr);
+    const displayHeight = canvas.clientHeight || (canvas.height / dpr);
+
     // 背景描画（Canvasで描画）
-    ctx.drawImage(images.background, game.backgroundX, 0, canvas.width, canvas.height);
-    ctx.drawImage(images.background, game.backgroundX + canvas.width, 0, canvas.width, canvas.height);
+    ctx.drawImage(images.background, game.backgroundX, 0, displayWidth, displayHeight);
+    ctx.drawImage(images.background, game.backgroundX + displayWidth, 0, displayWidth, displayHeight);
 
     // ベッド描画（Canvasで描画）
     beds.forEach(bed => {
@@ -981,7 +1011,7 @@ function render() {
     // デバッグ情報（任意）
     ctx.fillStyle = 'white';
     ctx.font = '16px Arial';
-    ctx.fillText(`プレゼント: ${game.deliveredPresents}/${game.totalBeds}`, 10, canvas.height - 20);
+    ctx.fillText(`プレゼント: ${game.deliveredPresents}/${game.totalBeds}`, 10, displayHeight - 20);
 
     // キャラクターの位置を更新（HTML要素でGIFアニメーション）
     updateCharacterPositions();
