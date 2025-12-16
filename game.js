@@ -386,9 +386,9 @@ function resizeCanvas() {
 
     // 地面の位置を設定
     if (game.isMobile) {
-        // モバイル時：キャラの下ラインがボタン領域の上に来るように調整
+        // モバイル時：キャラが背景画像の上に立つようにボタン領域の上に配置
         const touchControlsHeight = width <= 480 ? 100 : 120;
-        player.groundY = height - touchControlsHeight - 15;
+        player.groundY = height - touchControlsHeight;
     } else {
         // PC時：通常計算
         player.groundY = height - player.height;
