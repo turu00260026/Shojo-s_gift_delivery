@@ -388,7 +388,7 @@ function resizeCanvas() {
     if (game.isMobile) {
         // モバイル時：キャラの下ラインがボタン領域の上に来るように調整
         const touchControlsHeight = width <= 480 ? 100 : 120;
-        player.groundY = displayHeight - touchControlsHeight - 15;
+        player.groundY = height - touchControlsHeight - 15;
     } else {
         // PC時：通常計算
         player.groundY = height - player.height;
