@@ -388,7 +388,7 @@ function resizeCanvas() {
     if (game.isMobile) {
         // モバイル時：キャラが背景画像の上に立つようにボタン領域の上に配置
         const touchControlsHeight = width <= 480 ? 100 : 120;
-        player.groundY = height - touchControlsHeight + 5;
+        player.groundY = height - touchControlsHeight + 25;
     } else {
         // PC時：通常計算
         player.groundY = height - player.height;
@@ -692,7 +692,7 @@ function resetGame() {
     if (game.isMobile) {
         // モバイル時：キャラが背景画像の上に立つようにボタン領域の上に配置
         const touchControlsHeight = width <= 480 ? 100 : 120;
-        player.groundY = height - touchControlsHeight + 5;
+        player.groundY = height - touchControlsHeight + 25;
     } else {
         // PC時：通常計算
         player.groundY = height - player.height;
@@ -758,12 +758,19 @@ function initializeBeds() {
     }
 
     for (let i = 0; i < game.totalBeds; i++) {
+        let bedY = player.groundY - (baseHeight - player.baseHeight) * game.scale;
+        
+        // モバイル時はベッドも20ピクセル下げる
+        if (game.isMobile) {
+            bedY += 20;
+        }
+        
         beds.push({
             baseX: baseStartX + i * baseSpacing,  // 基本位置
             baseWidth: baseWidth,
             baseHeight: baseHeight,
             x: (baseStartX + i * baseSpacing) * game.scale,  // スケール後の位置
-            y: player.groundY - (baseHeight - player.baseHeight) * game.scale,
+            y: bedY,
             width: baseWidth * game.scale,
             height: baseHeight * game.scale,
             bedNumber: i,
