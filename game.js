@@ -22,15 +22,18 @@ const game = {
     deliveredPresents: 0,
     totalBeds: 10,
     clearTimer: 0,  // クリア演出用タイマー
-    runningOutPhase: false  // 走り抜け演出フラグ
+    runningOutPhase: false,  // 走り抜け演出フラグ
+    scale: 1  // 画面サイズに応じたスケール倍率
 };
 
 // プレイヤー（サンタ）
 const player = {
     x: 100,
     y: 0,
-    width: 160,  // 2倍のサイズ
-    height: 160, // 2倍のサイズ
+    baseWidth: 160,  // 基本サイズ（スケール前）
+    baseHeight: 160, // 基本サイズ（スケール前）
+    width: 160,  // 実際のサイズ（スケール後）
+    height: 160, // 実際のサイズ（スケール後）
     velocityY: 0,
     gravity: 0.6,
     jumpPower: -18,
@@ -48,6 +51,10 @@ const player = {
     deliveringTimer: 0,  // 配達アニメーション用タイマー
     element: null,  // HTML要素
     // 当たり判定用（透過部分を除外した実際のキャラクター範囲）
+    baseHitboxOffsetX: 30,
+    baseHitboxOffsetY: 30,
+    baseHitboxWidth: 100,
+    baseHitboxHeight: 120,
     hitboxOffsetX: 30,
     hitboxOffsetY: 30,
     hitboxWidth: 100,
@@ -268,13 +275,55 @@ function resizeCanvas() {
     game.canvas.width = width;
     game.canvas.height = height;
 
-    // 地面の位置を設定（すべてのオブジェクトが同じラインに）
+    // スケール倍率を計算（基準は1200px幅）
+    const baseWidth = 1200;
+    game.scale = width / baseWidth;
+
+    // プレイヤーのサイズをスケールに応じて調整
+    player.width = player.baseWidth * game.scale;
+    player.height = player.baseHeight * game.scale;
+    player.hitboxOffsetX = player.baseHitboxOffsetX * game.scale;
+    player.hitboxOffsetY = player.baseHitboxOffsetY * game.scale;
+    player.hitboxWidth = player.baseHitboxWidth * game.scale;
+    player.hitboxHeight = player.baseHitboxHeight * game.scale;
+
+    // 地面の位置を設定（スケールに応じて調整）
     if (game.canvas.height) {
-        player.groundY = game.canvas.height - 160;  // 160に変更（キャラの高さ分）
+        player.groundY = game.canvas.height - player.height;
         if (player.y === 0) {
             player.y = player.groundY;
         }
     }
+
+    // 既存のベッドと敵のサイズも更新
+    updateObjectsScale();
+}
+
+// オブジェクトのスケール更新
+function updateObjectsScale() {
+    // ベッドのサイズ更新
+    beds.forEach(bed => {
+        if (bed.baseWidth) {
+            bed.width = bed.baseWidth * game.scale;
+            bed.height = bed.baseHeight * game.scale;
+            bed.x = bed.baseX * game.scale;
+            bed.y = player.groundY - (bed.baseHeight - player.baseHeight) * game.scale;
+        }
+    });
+
+    // 敵のサイズ更新
+    enemies.forEach(enemy => {
+        if (enemy.baseWidth) {
+            enemy.width = enemy.baseWidth * game.scale;
+            enemy.height = enemy.baseHeight * game.scale;
+            enemy.x = enemy.baseX * game.scale;
+            enemy.y = player.groundY + 50 * game.scale;
+            enemy.hitboxOffsetX = enemy.baseHitboxOffsetX * game.scale;
+            enemy.hitboxOffsetY = enemy.baseHitboxOffsetY * game.scale;
+            enemy.hitboxWidth = enemy.baseHitboxWidth * game.scale;
+            enemy.hitboxHeight = enemy.baseHitboxHeight * game.scale;
+        }
+    });
 }
 
 // イベントリスナー設定
@@ -521,15 +570,20 @@ function updateLifeDisplay() {
 
 // ベッド初期化
 function initializeBeds() {
-    const spacing = 1800;  // 1200から1800に変更（1.5倍に）
+    const baseSpacing = 1800;  // 基本間隔
+    const baseWidth = 200;
+    const baseHeight = 160;
+    const baseStartX = 1500;
 
     for (let i = 0; i < game.totalBeds; i++) {
-        const bedHeight = 160;
         beds.push({
-            x: 1500 + i * spacing,  // 初期位置をさらに右に
-            y: player.groundY - 80,  // プレイヤーより80px上に配置
-            width: 200,  // 2倍のサイズ
-            height: bedHeight, // 2倍のサイズ
+            baseX: baseStartX + i * baseSpacing,  // 基本位置
+            baseWidth: baseWidth,
+            baseHeight: baseHeight,
+            x: (baseStartX + i * baseSpacing) * game.scale,  // スケール後の位置
+            y: player.groundY - (baseHeight - player.baseHeight) * game.scale,
+            width: baseWidth * game.scale,
+            height: baseHeight * game.scale,
             bedNumber: i,
             delivered: false
         });
@@ -542,77 +596,91 @@ function spawnEnemies() {
         {
             type: 'jamadaruma',
             image: images.jamadaruma,
-            width: 120,
-            height: 120,
-            hitboxOffsetX: 30,  // 透過部分を除外するため増やす
-            hitboxOffsetY: 30,  // 透過部分を除外するため増やす
-            hitboxWidth: 60,   // 実際のキャラクター部分のみ
-            hitboxHeight: 60   // 実際のキャラクター部分のみ
+            baseWidth: 120,
+            baseHeight: 120,
+            baseHitboxOffsetX: 30,
+            baseHitboxOffsetY: 30,
+            baseHitboxWidth: 60,
+            baseHitboxHeight: 60
         },
         {
             type: 'teki1',
             image: images.teki1,
-            width: 120,
-            height: 120,
-            hitboxOffsetX: 35,  // 透過部分を除外するため増やす
-            hitboxOffsetY: 35,  // 透過部分を除外するため増やす
-            hitboxWidth: 50,   // 実際のキャラクター部分のみ
-            hitboxHeight: 60   // 実際のキャラクター部分のみ
+            baseWidth: 120,
+            baseHeight: 120,
+            baseHitboxOffsetX: 35,
+            baseHitboxOffsetY: 35,
+            baseHitboxWidth: 50,
+            baseHitboxHeight: 60
         },
         {
             type: 'tekiJump',
             image: images.tekiJump,
-            width: 120,
-            height: 120,
-            hitboxOffsetX: 35,  // 透過部分を除外するため増やす
-            hitboxOffsetY: 35,  // 透過部分を除外するため増やす
-            hitboxWidth: 50,   // 実際のキャラクター部分のみ
-            hitboxHeight: 60   // 実際のキャラクター部分のみ
+            baseWidth: 120,
+            baseHeight: 120,
+            baseHitboxOffsetX: 35,
+            baseHitboxOffsetY: 35,
+            baseHitboxWidth: 50,
+            baseHitboxHeight: 60
         }
     ];
 
     // ベッドの間に敵を配置（ベッドと重ならないように）
-    const bedSpacing = 1800;  // ベッド間隔と合わせて1800に
+    const bedSpacing = 1800;
     const bedsStartX = 1500;
 
     for (let i = 0; i < game.totalBeds - 1; i++) {
         const enemyType = enemyTypes[Math.floor(Math.random() * enemyTypes.length)];
         // ベッドの間に配置（中間地点にランダムに配置）
         const bedX = bedsStartX + i * bedSpacing;
-        const enemyX = bedX + 400 + Math.random() * (bedSpacing - 800);
+        const enemyBaseX = bedX + 400 + Math.random() * (bedSpacing - 800);
 
         enemies.push({
-            x: enemyX,
-            y: player.groundY + 50,  // プレイヤーより50px下に配置
-            width: enemyType.width,
-            height: enemyType.height,
+            baseX: enemyBaseX,
+            baseWidth: enemyType.baseWidth,
+            baseHeight: enemyType.baseHeight,
+            x: enemyBaseX * game.scale,
+            y: player.groundY + 50 * game.scale,
+            width: enemyType.baseWidth * game.scale,
+            height: enemyType.baseHeight * game.scale,
             type: enemyType.type,
             image: enemyType.image,
             flying: false,
-            hitboxOffsetX: enemyType.hitboxOffsetX,
-            hitboxOffsetY: enemyType.hitboxOffsetY,
-            hitboxWidth: enemyType.hitboxWidth,
-            hitboxHeight: enemyType.hitboxHeight
+            baseHitboxOffsetX: enemyType.baseHitboxOffsetX,
+            baseHitboxOffsetY: enemyType.baseHitboxOffsetY,
+            baseHitboxWidth: enemyType.baseHitboxWidth,
+            baseHitboxHeight: enemyType.baseHitboxHeight,
+            hitboxOffsetX: enemyType.baseHitboxOffsetX * game.scale,
+            hitboxOffsetY: enemyType.baseHitboxOffsetY * game.scale,
+            hitboxWidth: enemyType.baseHitboxWidth * game.scale,
+            hitboxHeight: enemyType.baseHitboxHeight * game.scale
         });
 
         // 後半（ベッド5以降）は確率を上げてjamadarumaを追加配置
-        const jamadarumaProbability = i >= 4 ? 0.5 : 0.3;  // 後半は50%の確率
+        const jamadarumaProbability = i >= 4 ? 0.5 : 0.3;
         if (Math.random() < jamadarumaProbability) {
             const jamaType = enemyTypes[0];  // jamadaruma
-            const jamaX = bedX + 600 + Math.random() * (bedSpacing - 1000);
+            const jamaBaseX = bedX + 600 + Math.random() * (bedSpacing - 1000);
 
             enemies.push({
-                x: jamaX,
-                y: player.groundY + 50,
-                width: jamaType.width,
-                height: jamaType.height,
+                baseX: jamaBaseX,
+                baseWidth: jamaType.baseWidth,
+                baseHeight: jamaType.baseHeight,
+                x: jamaBaseX * game.scale,
+                y: player.groundY + 50 * game.scale,
+                width: jamaType.baseWidth * game.scale,
+                height: jamaType.baseHeight * game.scale,
                 type: jamaType.type,
                 image: jamaType.image,
                 flying: false,
-                hitboxOffsetX: jamaType.hitboxOffsetX,
-                hitboxOffsetY: jamaType.hitboxOffsetY,
-                hitboxWidth: jamaType.hitboxWidth,
-                hitboxHeight: jamaType.hitboxHeight
+                baseHitboxOffsetX: jamaType.baseHitboxOffsetX,
+                baseHitboxOffsetY: jamaType.baseHitboxOffsetY,
+                baseHitboxWidth: jamaType.baseHitboxWidth,
+                baseHitboxHeight: jamaType.baseHitboxHeight,
+                hitboxOffsetX: jamaType.baseHitboxOffsetX * game.scale,
+                hitboxOffsetY: jamaType.baseHitboxOffsetY * game.scale,
+                hitboxWidth: jamaType.baseHitboxWidth * game.scale,
+                hitboxHeight: jamaType.baseHitboxHeight * game.scale
             });
         }
     }
@@ -792,8 +860,8 @@ function checkCollision(obj1, obj2) {
 
 // ベッドの近くにいるかチェック（配達可能範囲）
 function checkNearBed(player, bed) {
-    const rangeX = 150;  // 横方向の配達可能範囲
-    const rangeY = 150;  // 縦方向の配達可能範囲（ベッドが上にあるため広く）
+    const rangeX = 150 * game.scale;  // スケールに応じた配達可能範囲
+    const rangeY = 150 * game.scale;
     return Math.abs(player.x - bed.x) < rangeX &&
            Math.abs(player.y - bed.y) < rangeY;
 }
@@ -807,12 +875,14 @@ function deliverPresent(bed) {
     player.state = 'delivering';
     player.deliveringTimer = 30;  // 約0.5秒のアニメーション（60FPS想定）
 
+    const giftSize = 80 * game.scale;  // スケールに応じたプレゼントサイズ
+
     // プレゼントを0.5秒後に表示するため、配達予定に追加
     pendingGifts.push({
-        x: bed.x + (bed.width - 80) / 2,  // ベッドの中央に配置
-        y: bed.y + (bed.height - 80) / 2,  // ベッドの中央に配置
-        width: 80,   // 2倍のサイズ
-        height: 80,   // 2倍のサイズ
+        x: bed.x + (bed.width - giftSize) / 2,  // ベッドの中央に配置
+        y: bed.y + (bed.height - giftSize) / 2,  // ベッドの中央に配置
+        width: giftSize,
+        height: giftSize,
         timer: 30  // 30フレーム（約0.5秒）後に表示
     });
 }
