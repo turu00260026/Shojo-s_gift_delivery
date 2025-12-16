@@ -656,10 +656,9 @@ function startGame() {
                 })
                 .catch(e => {
                     console.error('✗ BGM再生エラー:', e);
-                    // エラー時はボタン状態を更新
+                    // エラー時はボタン状態を更新（アラートは表示しない）
                     game.bgmEnabled = false;
                     document.getElementById('bgmButton').textContent = '🔇';
-                    alert('BGMの再生に失敗しました。ブラウザの設定で音声を許可してください。');
                 });
         }
     } else {
@@ -688,7 +687,16 @@ function resetGame() {
     if (width / height > aspectRatio) {
         height = (width / aspectRatio);
     }
-    player.groundY = height - player.height;
+    
+    // 地面の位置を設定
+    if (game.isMobile) {
+        // モバイル時：キャラが背景画像の上に立つようにボタン領域の上に配置
+        const touchControlsHeight = width <= 480 ? 100 : 120;
+        player.groundY = height - touchControlsHeight;
+    } else {
+        // PC時：通常計算
+        player.groundY = height - player.height;
+    }
 
     player.x = 100;
     player.y = player.groundY;
