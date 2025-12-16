@@ -140,12 +140,20 @@ const pendingGifts = [];
 // キャラクターHTML要素の作成
 function createCharacterElements() {
     const container = document.getElementById('gameCharacters');
+    
+    // 前の要素をクリア（念のため）
+    if (container) {
+        container.innerHTML = '';
+    }
 
     // プレイヤー要素を作成
     player.element = document.createElement('div');
     player.element.className = 'character player';
-    player.element.innerHTML = `<img src="assets/santa.gif?v=${Date.now()}" alt="サンタ">`;
-    container.appendChild(player.element);
+    const cacheBuster = '?v=' + Date.now();
+    player.element.innerHTML = `<img src="assets/santa.gif${cacheBuster}" alt="サンタ">`;
+    if (container) {
+        container.appendChild(player.element);
+    }
 
     // 敵要素は動的に追加
 }
@@ -156,25 +164,23 @@ function updateCharacterPositions() {
     const container = document.getElementById('gameCharacters');
     if (!container) return;
 
+    // コンテナの基本スタイル設定
+    container.style.position = 'absolute';
+    container.style.top = '0';
+    container.style.left = '0';
+    container.style.width = '100%';
+    container.style.height = '100%';
+    container.style.pointerEvents = 'none';
+
     // コンテナの変換を毎回設定（リセット後も正しく適用されるように）
     if (game.isMobile) {
         // 背景と同じ1.25倍拡大を適用
         container.style.transform = `scale(${game.bgZoom})`;
         container.style.transformOrigin = '50% 50%';
-        const canvas = game.canvas;
-        const offset = -((game.bgZoom - 1) / (2 * game.bgZoom)) * 100;
-        container.style.width = `${canvas.clientWidth}px`;
-        container.style.height = `${canvas.clientHeight}px`;
-        container.style.left = `${offset}%`;
-        container.style.top = `${offset}%`;
     } else {
         // PC時は変換なし
         container.style.transform = 'none';
         container.style.transformOrigin = '0 0';
-        container.style.width = '100%';
-        container.style.height = '100%';
-        container.style.left = '0';
-        container.style.top = '0';
     }
 
     // プレイヤーの位置更新
@@ -210,8 +216,8 @@ function updateCharacterPositions() {
 
     // 敵の位置更新
     enemies.forEach((enemy) => {
-        // 画面内にいるかチェック（表示サイズ基準）
-        const displayWidth = game.canvas.clientWidth || (game.canvas.width / (window.devicePixelRatio || 1));
+        // 画面内にいるかチェック（CSS表示サイズ基準）
+        const displayWidth = game.canvas.clientWidth;
         const isOnScreen = enemy.x + enemy.width > 0 && enemy.x < displayWidth;
 
         if (!enemy.element) {
@@ -226,7 +232,7 @@ function updateCharacterPositions() {
             } else {
                 gifSrc = `${enemy.type}.gif`;
             }
-            enemy.element.innerHTML = `<img src="assets/${gifSrc}?v=${timestamp}" alt="${enemy.type}">`;
+            enemy.element.innerHTML = `<img src="assets/${gifSrc}?v=${timestamp}" alt="${enemy.type}" style="display: block; width: 100%; height: 100%;">`;
             document.getElementById('gameCharacters').appendChild(enemy.element);
         }
 
@@ -351,9 +357,6 @@ function resizeCanvas() {
     // CSS上の表示サイズは通常サイズ
     game.canvas.style.width = width + 'px';
     game.canvas.style.height = height + 'px';
-
-    // コンテキストをスケール
-    game.ctx.scale(dpr, dpr);
 
     // スケール倍率を計算（基準は1200px幅）
     const baseWidth = 1200;
@@ -1116,9 +1119,9 @@ function render() {
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
 
-    // 表示サイズを取得
-    const displayWidth = canvas.clientWidth || (canvas.width / dpr);
-    const displayHeight = canvas.clientHeight || (canvas.height / dpr);
+    // CSS表示サイズ（デバイスピクセル比の影響を受けない）
+    const displayWidth = canvas.clientWidth;
+    const displayHeight = canvas.clientHeight;
 
     // 背景描画（Canvasで描画）
     if (game.isMobile) {
@@ -1138,7 +1141,7 @@ function render() {
 
     // ベッド描画（Canvasで描画）
     beds.forEach(bed => {
-        // 画面内のベッドのみ描画（表示幅基準）
+        // 画面内のベッドのみ描画（CSS表示サイズ基準）
         const isInView = bed.x > -bed.width && bed.x < displayWidth + 100;
 
         if (isInView) {
