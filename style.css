@@ -169,66 +169,87 @@ body {
     bottom: 0;
     left: 0;
     right: 0;
-    height: 100%;
+    padding: 20px;
     pointer-events: none;
 }
 
-#touchLeft, #touchRight {
+.left-controls, .right-controls {
     position: absolute;
-    bottom: 0;
-    width: 50%;
-    height: 100%;
+    bottom: 20px;
+    display: flex;
+    gap: 15px;
+    align-items: flex-end;
     pointer-events: auto;
 }
 
-#touchLeft {
-    left: 0;
+.left-controls {
+    left: 20px;
+    flex-direction: row;
 }
 
-#touchRight {
-    right: 0;
+.right-controls {
+    right: 20px;
+    flex-direction: row;
+}
+
+/* 方向ボタン（左右移動） */
+.direction-btn {
+    background: rgba(100, 100, 100, 0.8);
+    color: white;
+    font-size: 32px;
+    font-weight: bold;
+    width: 70px;
+    height: 70px;
+    border: 3px solid #fff;
+    border-radius: 10px;
+    cursor: pointer;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+    transition: transform 0.1s;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.direction-btn:active {
+    transform: scale(0.9);
+    background: rgba(80, 80, 80, 0.9);
+}
+
+/* アクションボタン（ジャンプ・配達） */
+.action-btn {
+    font-size: 18px;
+    font-weight: bold;
+    min-width: 80px;
+    height: 70px;
+    border: 3px solid #fff;
+    border-radius: 15px;
+    cursor: pointer;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+    transition: transform 0.1s;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 0 20px;
 }
 
 #jumpButton {
-    position: absolute;
-    bottom: 30px;
-    right: 30px;
     background: rgba(255, 200, 0, 0.9);
     color: #333;
-    font-size: 20px;
-    font-weight: bold;
-    padding: 20px 30px;
-    border: 3px solid #333;
-    border-radius: 50%;
-    cursor: pointer;
-    pointer-events: auto;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-    transition: transform 0.1s;
 }
 
 #jumpButton:active {
     transform: scale(0.9);
+    background: rgba(255, 180, 0, 1);
 }
 
 #deliverButton {
-    position: absolute;
-    bottom: 30px;
-    left: 30px;
     background: rgba(76, 175, 80, 0.9);
     color: white;
-    font-size: 18px;
-    font-weight: bold;
-    padding: 15px 25px;
-    border: 3px solid #333;
-    border-radius: 10px;
-    cursor: pointer;
-    pointer-events: auto;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-    transition: transform 0.1s;
 }
 
 #deliverButton:active {
     transform: scale(0.9);
+    background: rgba(56, 155, 60, 1);
 }
 
 /* ゲームオーバー画面 */
@@ -367,16 +388,39 @@ body {
 }
 
 @media (max-width: 480px) {
-    #jumpButton {
-        bottom: 20px;
-        right: 20px;
-        padding: 15px 25px;
-        font-size: 18px;
+    .left-controls, .right-controls {
+        bottom: 15px;
+        gap: 10px;
+    }
+
+    .left-controls {
+        left: 15px;
+    }
+
+    .right-controls {
+        right: 15px;
+    }
+
+    .direction-btn {
+        width: 60px;
+        height: 60px;
+        font-size: 28px;
+    }
+
+    .action-btn {
+        min-width: 70px;
+        height: 60px;
+        font-size: 16px;
+        padding: 0 15px;
     }
 
     .ui-btn {
         width: 40px;
         height: 40px;
         font-size: 18px;
+    }
+
+    #lifeDisplay {
+        font-size: 20px;
     }
 }

@@ -173,8 +173,8 @@ function updateCharacterPositions() {
 
     // 敵の位置更新
     enemies.forEach((enemy) => {
-        // 画面内にいるかチェック（左端-幅から右端+幅まで）
-        const isOnScreen = enemy.x > -enemy.width && enemy.x < game.canvas.width + enemy.width;
+        // 画面内にいるかチェック（背景画面の範囲内のみ表示）
+        const isOnScreen = enemy.x + enemy.width > 0 && enemy.x < game.canvas.width;
 
         if (!enemy.element) {
             enemy.element = document.createElement('div');
@@ -185,7 +185,7 @@ function updateCharacterPositions() {
             document.getElementById('gameCharacters').appendChild(enemy.element);
         }
 
-        // 画面内にいる場合のみ表示
+        // 画面内にいる場合のみ表示（背景範囲内のみ）
         if (isOnScreen) {
             enemy.element.style.display = 'block';
             enemy.element.style.left = `${enemy.x}px`;
@@ -304,33 +304,45 @@ function setupEventListeners() {
 
 // タッチコントロール設定
 function setupTouchControls() {
-    const touchLeft = document.getElementById('touchLeft');
-    const touchRight = document.getElementById('touchRight');
+    const leftButton = document.getElementById('leftButton');
+    const rightButton = document.getElementById('rightButton');
     const jumpButton = document.getElementById('jumpButton');
     const deliverButton = document.getElementById('deliverButton');
 
-    // 左移動
-    touchLeft.addEventListener('touchstart', (e) => {
+    // 左移動ボタン
+    leftButton.addEventListener('touchstart', (e) => {
         e.preventDefault();
         player.movingLeft = true;
     });
-    touchLeft.addEventListener('touchend', (e) => {
+    leftButton.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        player.movingLeft = false;
+    });
+    leftButton.addEventListener('touchcancel', (e) => {
         e.preventDefault();
         player.movingLeft = false;
     });
 
-    // 右移動
-    touchRight.addEventListener('touchstart', (e) => {
+    // 右移動ボタン
+    rightButton.addEventListener('touchstart', (e) => {
         e.preventDefault();
         player.movingRight = true;
     });
-    touchRight.addEventListener('touchend', (e) => {
+    rightButton.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        player.movingRight = false;
+    });
+    rightButton.addEventListener('touchcancel', (e) => {
         e.preventDefault();
         player.movingRight = false;
     });
 
     // ジャンプボタン
     jumpButton.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        handleJump();
+    });
+    jumpButton.addEventListener('click', (e) => {
         e.preventDefault();
         handleJump();
     });
@@ -532,30 +544,30 @@ function spawnEnemies() {
             image: images.jamadaruma,
             width: 120,
             height: 120,
-            hitboxOffsetX: 20,
-            hitboxOffsetY: 20,
-            hitboxWidth: 80,
-            hitboxHeight: 80
+            hitboxOffsetX: 30,  // 透過部分を除外するため増やす
+            hitboxOffsetY: 30,  // 透過部分を除外するため増やす
+            hitboxWidth: 60,   // 実際のキャラクター部分のみ
+            hitboxHeight: 60   // 実際のキャラクター部分のみ
         },
         {
             type: 'teki1',
             image: images.teki1,
             width: 120,
             height: 120,
-            hitboxOffsetX: 25,
-            hitboxOffsetY: 25,
-            hitboxWidth: 70,
-            hitboxHeight: 85
+            hitboxOffsetX: 35,  // 透過部分を除外するため増やす
+            hitboxOffsetY: 35,  // 透過部分を除外するため増やす
+            hitboxWidth: 50,   // 実際のキャラクター部分のみ
+            hitboxHeight: 60   // 実際のキャラクター部分のみ
         },
         {
             type: 'tekiJump',
             image: images.tekiJump,
             width: 120,
             height: 120,
-            hitboxOffsetX: 25,
-            hitboxOffsetY: 25,
-            hitboxWidth: 70,
-            hitboxHeight: 85
+            hitboxOffsetX: 35,  // 透過部分を除外するため増やす
+            hitboxOffsetY: 35,  // 透過部分を除外するため増やす
+            hitboxWidth: 50,   // 実際のキャラクター部分のみ
+            hitboxHeight: 60   // 実際のキャラクター部分のみ
         }
     ];
 
