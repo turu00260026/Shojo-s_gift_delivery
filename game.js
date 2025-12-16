@@ -388,7 +388,7 @@ function resizeCanvas() {
     if (game.isMobile) {
         // モバイル時：キャラが背景画像の上に立つようにボタン領域の上に配置
         const touchControlsHeight = width <= 480 ? 100 : 120;
-        player.groundY = height - touchControlsHeight + 25;
+        player.groundY = height - touchControlsHeight + 45;
     } else {
         // PC時：通常計算
         player.groundY = height - player.height;
@@ -413,6 +413,11 @@ function updateObjectsScale() {
             bed.height = bed.baseHeight * game.scale;
             bed.x = bed.baseX * game.scale;
             bed.y = player.groundY - (bed.baseHeight - player.baseHeight) * game.scale;
+            
+            // モバイル時はベッドを40ピクセル下げる
+            if (game.isMobile) {
+                bed.y += 40;
+            }
         }
     });
 
@@ -692,7 +697,7 @@ function resetGame() {
     if (game.isMobile) {
         // モバイル時：キャラが背景画像の上に立つようにボタン領域の上に配置
         const touchControlsHeight = width <= 480 ? 100 : 120;
-        player.groundY = height - touchControlsHeight + 25;
+        player.groundY = height - touchControlsHeight + 45;
     } else {
         // PC時：通常計算
         player.groundY = height - player.height;
