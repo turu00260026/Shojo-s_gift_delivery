@@ -388,7 +388,7 @@ function resizeCanvas() {
     if (game.isMobile) {
         // モバイル時：キャラが背景画像の上に立つようにボタン領域の上に配置
         const touchControlsHeight = width <= 480 ? 100 : 120;
-        player.groundY = height - touchControlsHeight;
+        player.groundY = height - touchControlsHeight + 5;
     } else {
         // PC時：通常計算
         player.groundY = height - player.height;
@@ -692,7 +692,7 @@ function resetGame() {
     if (game.isMobile) {
         // モバイル時：キャラが背景画像の上に立つようにボタン領域の上に配置
         const touchControlsHeight = width <= 480 ? 100 : 120;
-        player.groundY = height - touchControlsHeight;
+        player.groundY = height - touchControlsHeight + 5;
     } else {
         // PC時：通常計算
         player.groundY = height - player.height;
