@@ -17,6 +17,7 @@ const game = {
     bgmEnabled: true,
     life: 3,
     score: 0,
+    baseScrollSpeed: 3,  // 基本スクロール速度
     scrollSpeed: 3,
     backgroundX: 0,
     deliveredPresents: 0,
@@ -278,6 +279,13 @@ function resizeCanvas() {
     // スケール倍率を計算（基準は1200px幅）
     const baseWidth = 1200;
     game.scale = width / baseWidth;
+
+    // スマホ（768px以下）の場合、スクロール速度を1/3に
+    if (width <= 768) {
+        game.scrollSpeed = game.baseScrollSpeed / 3;
+    } else {
+        game.scrollSpeed = game.baseScrollSpeed;
+    }
 
     // プレイヤーのサイズをスケールに応じて調整
     player.width = player.baseWidth * game.scale;
