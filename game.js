@@ -33,6 +33,7 @@ const game = {
 const player = {
     x: 100,
     y: 0,
+    groundY: 0,  // 地面のY座標を追加
     baseWidth: 160,  // 基本サイズ（スケール前）
     baseHeight: 160, // 基本サイズ（スケール前）
     width: 160,  // 実際のサイズ（スケール後）
@@ -151,32 +152,29 @@ function createCharacterElements() {
 
 // キャラクター要素の位置を更新
 function updateCharacterPositions() {
-    // モバイル時の背景ズームに合わせた変換を適用（初回のみ設定）
+    // モバイル時の背景ズームに合わせた変換を適用
     const container = document.getElementById('gameCharacters');
     if (!container) return;
 
-    // コンテナの変換が未設定の場合のみ設定（パフォーマンス改善）
-    if (!container.dataset.transformed) {
-        if (game.isMobile) {
-            // 背景と同じ1.25倍拡大を適用
-            container.style.transform = `scale(${game.bgZoom})`;
-            container.style.transformOrigin = '50% 50%';
-            const canvas = game.canvas;
-            const offset = -((game.bgZoom - 1) / (2 * game.bgZoom)) * 100;
-            container.style.width = `${canvas.clientWidth}px`;
-            container.style.height = `${canvas.clientHeight}px`;
-            container.style.left = `${offset}%`;
-            container.style.top = `${offset}%`;
-        } else {
-            // PC時は変換なし
-            container.style.transform = 'none';
-            container.style.transformOrigin = '0 0';
-            container.style.width = '100%';
-            container.style.height = '100%';
-            container.style.left = '0';
-            container.style.top = '0';
-        }
-        container.dataset.transformed = 'true';
+    // コンテナの変換を毎回設定（リセット後も正しく適用されるように）
+    if (game.isMobile) {
+        // 背景と同じ1.25倍拡大を適用
+        container.style.transform = `scale(${game.bgZoom})`;
+        container.style.transformOrigin = '50% 50%';
+        const canvas = game.canvas;
+        const offset = -((game.bgZoom - 1) / (2 * game.bgZoom)) * 100;
+        container.style.width = `${canvas.clientWidth}px`;
+        container.style.height = `${canvas.clientHeight}px`;
+        container.style.left = `${offset}%`;
+        container.style.top = `${offset}%`;
+    } else {
+        // PC時は変換なし
+        container.style.transform = 'none';
+        container.style.transformOrigin = '0 0';
+        container.style.width = '100%';
+        container.style.height = '100%';
+        container.style.left = '0';
+        container.style.top = '0';
     }
 
     // プレイヤーの位置更新
@@ -212,8 +210,9 @@ function updateCharacterPositions() {
 
     // 敵の位置更新
     enemies.forEach((enemy) => {
-        // 画面内にいるかチェック（背景画面の範囲内のみ表示）
-        const isOnScreen = enemy.x + enemy.width > 0 && enemy.x < game.canvas.width;
+        // 画面内にいるかチェック（表示サイズ基準）
+        const displayWidth = game.canvas.clientWidth || (game.canvas.width / (window.devicePixelRatio || 1));
+        const isOnScreen = enemy.x + enemy.width > 0 && enemy.x < displayWidth;
 
         if (!enemy.element) {
             enemy.element = document.createElement('div');
@@ -246,17 +245,18 @@ function updateCharacterPositions() {
 
 // キャラクター要素をクリア
 function clearCharacterElements() {
+    // プレイヤー要素を削除
+    if (player.element && player.element.parentNode) {
+        player.element.parentNode.removeChild(player.element);
+        player.element = null;
+    }
+
+    // 敵要素を削除
     enemies.forEach(enemy => {
         if (enemy.element && enemy.element.parentNode) {
             enemy.element.parentNode.removeChild(enemy.element);
         }
     });
-
-    // コンテナの変換状態をリセット
-    const container = document.getElementById('gameCharacters');
-    if (container) {
-        delete container.dataset.transformed;
-    }
 }
 
 // 初期化
@@ -380,13 +380,15 @@ function resizeCanvas() {
     player.hitboxWidth = player.baseHitboxWidth * game.scale;
     player.hitboxHeight = player.baseHitboxHeight * game.scale;
 
-    // 地面の位置を設定（スケールに応じて調整）
-    if (game.canvas.height) {
-        player.groundY = game.canvas.height - player.height;
-        if (player.y === 0) {
-            player.y = player.groundY;
-        }
+    // 地面の位置を設定（CSS表示サイズ基準で計算）
+    // width と height は既に CSS サイズ（表示サイズ）
+    player.groundY = height - player.height;
+
+    // 初期位置または範囲外の場合は地面に配置
+    if (player.y === 0 || player.y > player.groundY) {
+        player.y = player.groundY;
     }
+
 
     // 既存のベッドと敵のサイズも更新
     updateObjectsScale();
@@ -652,6 +654,17 @@ function resetGame() {
     game.clearTimer = 0;
     game.runningOutPhase = false;
 
+    // 地面の位置を再計算（player.groundY は既に resizeCanvas で設定済み）
+    // 念のため再設定
+    const container = document.getElementById('gameContainer');
+    let height = container.clientHeight;
+    const width = container.clientWidth;
+    const aspectRatio = 16 / 9;
+    if (width / height > aspectRatio) {
+        height = (width / aspectRatio);
+    }
+    player.groundY = height - player.height;
+
     player.x = 100;
     player.y = player.groundY;
     player.velocityY = 0;
@@ -666,6 +679,9 @@ function resetGame() {
     player.invincibleTimer = 0;
     player.nearBed = null;
     player.deliveringTimer = 0;
+    player._frameCount = 0;
+    player._debugStartTime = null;
+
 
     // キャラクター要素をクリア
     clearCharacterElements();
@@ -674,6 +690,9 @@ function resetGame() {
     beds.length = 0;
     gifts.length = 0;
     pendingGifts.length = 0;  // 配達予定プレゼントもクリア
+
+    // プレイヤー要素を再作成
+    createCharacterElements();
 
     updateLifeDisplay();
     initializeBeds();
@@ -1119,15 +1138,20 @@ function render() {
 
     // ベッド描画（Canvasで描画）
     beds.forEach(bed => {
-        if (bed.x > -bed.width && bed.x < canvas.width + 100) {
-            const bedImage = images.beds[bed.bedNumber];
-            ctx.drawImage(bedImage, bed.x, bed.y, bed.width, bed.height);
+        // 画面内のベッドのみ描画（表示幅基準）
+        const isInView = bed.x > -bed.width && bed.x < displayWidth + 100;
 
-            // 配達可能な場合は「E」キーのヒントを表示
-            if (player.nearBed === bed && !bed.delivered) {
-                ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-                ctx.font = 'bold 24px Arial';
-                ctx.fillText('Press E or Enter', bed.x, bed.y - 20);
+        if (isInView) {
+            const bedImage = images.beds[bed.bedNumber];
+            if (bedImage && bedImage.complete) {
+                ctx.drawImage(bedImage, bed.x, bed.y, bed.width, bed.height);
+
+                // 配達可能な場合は「E」キーのヒントを表示
+                if (player.nearBed === bed && !bed.delivered) {
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+                    ctx.font = 'bold 24px Arial';
+                    ctx.fillText('Press E or Enter', bed.x, bed.y - 20);
+                }
             }
         }
     });
