@@ -739,9 +739,15 @@ function updateLifeDisplay() {
 // ベッド初期化
 function initializeBeds() {
     const baseSpacing = 1800;  // 基本間隔
-    const baseWidth = 200;
-    const baseHeight = 160;
+    let baseWidth = 200;
+    let baseHeight = 160;
     const baseStartX = 1500;
+
+    // モバイル時は1.2倍のサイズ
+    if (game.isMobile) {
+        baseWidth *= 1.2;
+        baseHeight *= 1.2;
+    }
 
     for (let i = 0; i < game.totalBeds; i++) {
         beds.push({
@@ -1061,7 +1067,12 @@ function deliverPresent(bed) {
     player.state = 'delivering';
     player.deliveringTimer = 30;  // 約0.5秒のアニメーション（60FPS想定）
 
-    const giftSize = 80 * game.scale;  // スケールに応じたプレゼントサイズ
+    let giftSize = 80 * game.scale;  // スケールに応じたプレゼントサイズ
+    
+    // モバイル時は1.2倍のサイズ
+    if (game.isMobile) {
+        giftSize *= 1.2;
+    }
 
     // プレゼントを0.5秒後に表示するため、配達予定に追加
     pendingGifts.push({
