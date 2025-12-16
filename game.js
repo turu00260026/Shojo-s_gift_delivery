@@ -151,21 +151,32 @@ function createCharacterElements() {
 
 // キャラクター要素の位置を更新
 function updateCharacterPositions() {
-    // モバイル時の背景ズームに合わせた変換を適用
+    // モバイル時の背景ズームに合わせた変換を適用（初回のみ設定）
     const container = document.getElementById('gameCharacters');
-    if (game.isMobile && container) {
-        // 背景と同じ変換を適用（1.25倍拡大、中央揃え）
-        const scaleValue = game.bgZoom;
-        const offsetPercent = -((scaleValue - 1) / 2) * 100;
-        container.style.transform = `scale(${scaleValue})`;
-        container.style.transformOrigin = 'center center';
-        container.style.left = `${offsetPercent}%`;
-        container.style.top = `${offsetPercent}%`;
-    } else if (container) {
-        // PC時は変換なし
-        container.style.transform = 'none';
-        container.style.left = '0';
-        container.style.top = '0';
+    if (!container) return;
+
+    // コンテナの変換が未設定の場合のみ設定（パフォーマンス改善）
+    if (!container.dataset.transformed) {
+        if (game.isMobile) {
+            // 背景と同じ1.25倍拡大を適用
+            container.style.transform = `scale(${game.bgZoom})`;
+            container.style.transformOrigin = '50% 50%';
+            const canvas = game.canvas;
+            const offset = -((game.bgZoom - 1) / (2 * game.bgZoom)) * 100;
+            container.style.width = `${canvas.clientWidth}px`;
+            container.style.height = `${canvas.clientHeight}px`;
+            container.style.left = `${offset}%`;
+            container.style.top = `${offset}%`;
+        } else {
+            // PC時は変換なし
+            container.style.transform = 'none';
+            container.style.transformOrigin = '0 0';
+            container.style.width = '100%';
+            container.style.height = '100%';
+            container.style.left = '0';
+            container.style.top = '0';
+        }
+        container.dataset.transformed = 'true';
     }
 
     // プレイヤーの位置更新
@@ -240,6 +251,12 @@ function clearCharacterElements() {
             enemy.element.parentNode.removeChild(enemy.element);
         }
     });
+
+    // コンテナの変換状態をリセット
+    const container = document.getElementById('gameCharacters');
+    if (container) {
+        delete container.dataset.transformed;
+    }
 }
 
 // 初期化
@@ -252,8 +269,32 @@ function init() {
     window.addEventListener('resize', resizeCanvas);
 
     // BGM設定
-    game.bgm = new Audio('assets/bgm.mp3');
-    game.bgm.loop = true;
+    try {
+        game.bgm = new Audio('assets/bgm.mp3');
+        game.bgm.loop = true;
+        game.bgm.volume = 0.5;  // 音量を50%に設定
+
+        // イベントリスナーでデバッグ
+        game.bgm.addEventListener('canplaythrough', () => {
+            console.log('BGM: ロード完了、再生可能');
+        });
+        game.bgm.addEventListener('error', (e) => {
+            console.error('BGM: ロードエラー', e);
+            console.error('エラー詳細:', game.bgm.error);
+        });
+        game.bgm.addEventListener('play', () => {
+            console.log('BGM: 再生開始');
+        });
+        game.bgm.addEventListener('pause', () => {
+            console.log('BGM: 一時停止');
+        });
+
+        // BGMのロード開始
+        game.bgm.load();
+        console.log('BGM: 初期化完了');
+    } catch (error) {
+        console.error('BGM初期化エラー:', error);
+    }
 
     // イベントリスナー設定
     setupEventListeners();
@@ -530,8 +571,19 @@ function toggleBGM() {
     const btn = document.getElementById('bgmButton');
 
     if (game.bgmEnabled) {
-        game.bgm.play().catch(e => console.log('BGM再生エラー:', e));
-        btn.textContent = '🔊';
+        const playPromise = game.bgm.play();
+        if (playPromise !== undefined) {
+            playPromise
+                .then(() => {
+                    console.log('BGM再生開始');
+                    btn.textContent = '🔊';
+                })
+                .catch(e => {
+                    console.error('BGM再生エラー:', e);
+                    game.bgmEnabled = false;
+                    btn.textContent = '🔇';
+                });
+        }
     } else {
         game.bgm.pause();
         btn.textContent = '🔇';
@@ -548,7 +600,10 @@ function togglePause() {
         game.state = GameState.PLAYING;
         document.getElementById('pauseButton').textContent = '⏸';
         if (game.bgmEnabled) {
-            game.bgm.play().catch(e => console.log('BGM再生エラー:', e));
+            const playPromise = game.bgm.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(e => console.error('BGM再生エラー:', e));
+            }
         }
         gameLoop();
     }
@@ -563,14 +618,25 @@ function startGame() {
     resetGame();
 
     // BGM再生（ユーザー操作後なので確実に再生可能）
-    if (game.bgmEnabled) {
+    if (game.bgm && game.bgmEnabled) {
         game.bgm.currentTime = 0;  // 最初から再生
-        game.bgm.play().catch(e => {
-            console.log('BGM再生エラー:', e);
-            // エラー時はボタン状態を更新
-            game.bgmEnabled = false;
-            document.getElementById('bgmButton').textContent = '🔇';
-        });
+        const playPromise = game.bgm.play();
+        if (playPromise !== undefined) {
+            playPromise
+                .then(() => {
+                    console.log('✓ ゲーム開始: BGM再生成功');
+                    document.getElementById('bgmButton').textContent = '🔊';
+                })
+                .catch(e => {
+                    console.error('✗ BGM再生エラー:', e);
+                    // エラー時はボタン状態を更新
+                    game.bgmEnabled = false;
+                    document.getElementById('bgmButton').textContent = '🔇';
+                    alert('BGMの再生に失敗しました。ブラウザの設定で音声を許可してください。');
+                });
+        }
+    } else {
+        console.warn('BGMが無効または未初期化');
     }
 
     game.state = GameState.PLAYING;
@@ -757,7 +823,10 @@ function retryGame() {
 
     if (game.bgmEnabled) {
         game.bgm.currentTime = 0;
-        game.bgm.play().catch(e => console.log('BGM再生エラー:', e));
+        const playPromise = game.bgm.play();
+        if (playPromise !== undefined) {
+            playPromise.catch(e => console.error('BGM再生エラー:', e));
+        }
     }
 
     gameLoop();
@@ -767,8 +836,14 @@ function retryGame() {
 function gameLoop() {
     if (game.state !== GameState.PLAYING) return;
 
-    update();
-    render();
+    try {
+        update();
+        render();
+    } catch (error) {
+        console.error('ゲームループエラー:', error);
+        console.error('スタック:', error.stack);
+        // エラーが発生してもゲームを続行
+    }
 
     game.animationId = requestAnimationFrame(gameLoop);
 }
@@ -1072,4 +1147,23 @@ function render() {
 }
 
 // ページ読み込み時に初期化
-window.addEventListener('load', init);
+window.addEventListener('load', () => {
+    console.log('=== ゲーム初期化開始 ===');
+    try {
+        init();
+        console.log('=== ゲーム初期化完了 ===');
+    } catch (error) {
+        console.error('=== 初期化エラー ===', error);
+    }
+});
+
+// グローバルエラーハンドラ
+window.addEventListener('error', (event) => {
+    console.error('グローバルエラー:', event.error);
+    console.error('メッセージ:', event.message);
+    console.error('ファイル:', event.filename, '行:', event.lineno);
+});
+
+window.addEventListener('unhandledrejection', (event) => {
+    console.error('未処理のPromise拒否:', event.reason);
+});
