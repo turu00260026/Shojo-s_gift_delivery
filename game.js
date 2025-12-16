@@ -434,13 +434,28 @@ function updateObjectsScale() {
 // イベントリスナー設定
 function setupEventListeners() {
     // スタートボタン
-    document.getElementById('startButton').addEventListener('click', startGame);
+    const startButton = document.getElementById('startButton');
+    startButton.addEventListener('click', startGame);
+    startButton.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        startGame();
+    });
 
     // リトライボタン
-    document.getElementById('retryButton').addEventListener('click', retryGame);
+    const retryButton = document.getElementById('retryButton');
+    retryButton.addEventListener('click', retryGame);
+    retryButton.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        retryGame();
+    });
 
     // 再スタートボタン
-    document.getElementById('restartButton').addEventListener('click', retryGame);
+    const restartButton = document.getElementById('restartButton');
+    restartButton.addEventListener('click', retryGame);
+    restartButton.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        retryGame();
+    });
 
     // BGMボタン
     document.getElementById('bgmButton').addEventListener('click', toggleBGM);
