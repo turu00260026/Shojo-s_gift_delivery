@@ -19,16 +19,19 @@ body {
 #gameContainer {
     position: relative;
     width: 100%;
-    height: 100%;
     max-width: 1200px;
-    max-height: 800px;
+    aspect-ratio: 16 / 9;
     display: flex;
     justify-content: center;
     align-items: center;
+    margin: auto;
 }
 
 /* タイトル画面 */
 #titleScreen {
+    position: absolute;
+    top: 0;
+    left: 0;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -69,7 +72,9 @@ body {
 
 /* ゲーム画面 */
 #gameScreen {
-    position: relative;
+    position: absolute;
+    top: 0;
+    left: 0;
     width: 100%;
     height: 100%;
 }
@@ -349,6 +354,20 @@ body {
 
 /* レスポンシブ対応 */
 @media (max-width: 768px) {
+    body {
+        display: block;
+        overflow-y: auto;
+    }
+
+    #gameContainer {
+        position: relative;
+        width: 100vw;
+        height: auto;
+        max-width: 100vw;
+        aspect-ratio: 16 / 9;
+        margin: 0;
+    }
+
     #touchControls {
         display: block;
     }
