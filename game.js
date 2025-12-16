@@ -362,11 +362,11 @@ function resizeCanvas() {
     const baseWidth = 1200;
     game.scale = width / baseWidth;
 
-    // スマホ（768px以下）の場合、スクロール速度を1/3 + 10%に、ジャンプ力を1/3に、背景を1.25倍ズーム
+    // スマホ（768px以下）の場合、スクロール速度を1/3 + 10%に、背景を1.25倍ズーム
     if (width <= 768) {
         game.isMobile = true;
         game.scrollSpeed = (game.baseScrollSpeed / 3) * 1.1;  // 1/3の速度から10%アップ
-        player.jumpPower = player.baseJumpPower / 3;  // モバイルはジャンプ力1/3
+        player.jumpPower = player.baseJumpPower;  // PC版と同じジャンプ力
         game.bgZoom = 1.25;  // 背景を1.25倍に拡大（左右10%ずつカット）
     } else {
         game.isMobile = false;
@@ -383,9 +383,14 @@ function resizeCanvas() {
     player.hitboxWidth = player.baseHitboxWidth * game.scale;
     player.hitboxHeight = player.baseHitboxHeight * game.scale;
 
-    // 地面の位置を設定（CSS表示サイズ基準で計算）
-    // width と height は既に CSS サイズ（表示サイズ）
-    player.groundY = height - player.height;
+    // 地面の位置を設定
+    if (game.isMobile) {
+        // モバイル時：キャラの下ラインが背景画像の下ラインと一致するように
+        player.groundY = height;
+    } else {
+        // PC時：通常計算
+        player.groundY = height - player.height;
+    }
 
     // 初期位置または範囲外の場合は地面に配置
     if (player.y === 0 || player.y > player.groundY) {
