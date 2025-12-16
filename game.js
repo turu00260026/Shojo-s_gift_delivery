@@ -151,6 +151,23 @@ function createCharacterElements() {
 
 // キャラクター要素の位置を更新
 function updateCharacterPositions() {
+    // モバイル時の背景ズームに合わせた変換を適用
+    const container = document.getElementById('gameCharacters');
+    if (game.isMobile && container) {
+        // 背景と同じ変換を適用（1.25倍拡大、中央揃え）
+        const scaleValue = game.bgZoom;
+        const offsetPercent = -((scaleValue - 1) / 2) * 100;
+        container.style.transform = `scale(${scaleValue})`;
+        container.style.transformOrigin = 'center center';
+        container.style.left = `${offsetPercent}%`;
+        container.style.top = `${offsetPercent}%`;
+    } else if (container) {
+        // PC時は変換なし
+        container.style.transform = 'none';
+        container.style.left = '0';
+        container.style.top = '0';
+    }
+
     // プレイヤーの位置更新
     if (player.element) {
         player.element.style.left = `${player.x}px`;
@@ -545,9 +562,15 @@ function startGame() {
     // ゲーム状態リセット
     resetGame();
 
-    // BGM再生
+    // BGM再生（ユーザー操作後なので確実に再生可能）
     if (game.bgmEnabled) {
-        game.bgm.play().catch(e => console.log('BGM再生エラー:', e));
+        game.bgm.currentTime = 0;  // 最初から再生
+        game.bgm.play().catch(e => {
+            console.log('BGM再生エラー:', e);
+            // エラー時はボタン状態を更新
+            game.bgmEnabled = false;
+            document.getElementById('bgmButton').textContent = '🔇';
+        });
     }
 
     game.state = GameState.PLAYING;
