@@ -24,7 +24,9 @@ const game = {
     totalBeds: 10,
     clearTimer: 0,  // クリア演出用タイマー
     runningOutPhase: false,  // 走り抜け演出フラグ
-    scale: 1  // 画面サイズに応じたスケール倍率
+    scale: 1,  // 画面サイズに応じたスケール倍率
+    isMobile: false,  // モバイル判定
+    bgZoom: 1  // 背景のズーム倍率（モバイル時に調整）
 };
 
 // プレイヤー（サンタ）
@@ -189,7 +191,14 @@ function updateCharacterPositions() {
             enemy.element = document.createElement('div');
             enemy.element.className = 'character enemy';
             const timestamp = Date.now();
-            const gifSrc = enemy.type === 'jamadaruma' ? 'jamadaruma.png' : `${enemy.type}.gif`;
+            let gifSrc;
+            if (enemy.type === 'jamadaruma') {
+                gifSrc = 'jamadaruma.png';
+            } else if (enemy.type === 'tekiJump') {
+                gifSrc = 'tekijump.gif';  // 小文字のファイル名に対応
+            } else {
+                gifSrc = `${enemy.type}.gif`;
+            }
             enemy.element.innerHTML = `<img src="assets/${gifSrc}?v=${timestamp}" alt="${enemy.type}">`;
             document.getElementById('gameCharacters').appendChild(enemy.element);
         }
@@ -292,13 +301,17 @@ function resizeCanvas() {
     const baseWidth = 1200;
     game.scale = width / baseWidth;
 
-    // スマホ（768px以下）の場合、スクロール速度を1/3に、ジャンプ力を半分に
+    // スマホ（768px以下）の場合、スクロール速度を1/3 + 10%に、ジャンプ力を1/3に、背景を1.25倍ズーム
     if (width <= 768) {
-        game.scrollSpeed = game.baseScrollSpeed / 3;
-        player.jumpPower = player.baseJumpPower / 2;  // モバイルはジャンプ力半分
+        game.isMobile = true;
+        game.scrollSpeed = (game.baseScrollSpeed / 3) * 1.1;  // 1/3の速度から10%アップ
+        player.jumpPower = player.baseJumpPower / 3;  // モバイルはジャンプ力1/3
+        game.bgZoom = 1.25;  // 背景を1.25倍に拡大（左右10%ずつカット）
     } else {
+        game.isMobile = false;
         game.scrollSpeed = game.baseScrollSpeed;
         player.jumpPower = player.baseJumpPower;  // PCは通常のジャンプ力
+        game.bgZoom = 1;  // 通常表示
     }
 
     // プレイヤーのサイズをスケールに応じて調整
@@ -771,6 +784,12 @@ function update() {
     player.velocityY += player.gravity;
     player.y += player.velocityY;
 
+    // 上限チェック（画面上端を超えないように）
+    if (player.y < 0) {
+        player.y = 0;
+        player.velocityY = 0;  // 上昇を止める
+    }
+
     // 地面判定
     if (player.y >= player.groundY) {
         player.y = player.groundY;
@@ -985,8 +1004,20 @@ function render() {
     const displayHeight = canvas.clientHeight || (canvas.height / dpr);
 
     // 背景描画（Canvasで描画）
-    ctx.drawImage(images.background, game.backgroundX, 0, displayWidth, displayHeight);
-    ctx.drawImage(images.background, game.backgroundX + displayWidth, 0, displayWidth, displayHeight);
+    if (game.isMobile) {
+        // モバイル時: 背景を1.25倍に拡大して中央から表示（左右10%ずつカット）
+        const bgWidth = displayWidth * game.bgZoom;
+        const bgHeight = displayHeight * game.bgZoom;
+        const offsetX = -(bgWidth - displayWidth) / 2;  // 中央揃え用オフセット
+        const offsetY = -(bgHeight - displayHeight) / 2;
+
+        ctx.drawImage(images.background, game.backgroundX + offsetX, offsetY, bgWidth, bgHeight);
+        ctx.drawImage(images.background, game.backgroundX + displayWidth + offsetX, offsetY, bgWidth, bgHeight);
+    } else {
+        // PC時: 通常表示
+        ctx.drawImage(images.background, game.backgroundX, 0, displayWidth, displayHeight);
+        ctx.drawImage(images.background, game.backgroundX + displayWidth, 0, displayWidth, displayHeight);
+    }
 
     // ベッド描画（Canvasで描画）
     beds.forEach(bed => {
