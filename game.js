@@ -366,7 +366,7 @@ function resizeCanvas() {
     if (width <= 768) {
         game.isMobile = true;
         game.scrollSpeed = (game.baseScrollSpeed / 3) * 1.1;  // 1/3の速度から10%アップ
-        player.jumpPower = player.baseJumpPower;  // PC版と同じジャンプ力
+        player.jumpPower = player.baseJumpPower * 2;  // ジャンプ力を2倍に
         game.bgZoom = 1.25;  // 背景を1.25倍に拡大（左右10%ずつカット）
     } else {
         game.isMobile = false;
@@ -385,8 +385,10 @@ function resizeCanvas() {
 
     // 地面の位置を設定
     if (game.isMobile) {
-        // モバイル時：キャラの下ラインが背景画像の下ラインと一致するように
-        player.groundY = height;
+        // モバイル時：キャラの下ラインがボタン領域より上になるように調整
+        // touchControlsは最小120px高さ（768px以下）または100px高さ（480px以下）
+        const touchControlsHeight = width <= 480 ? 100 : 120;
+        player.groundY = height - touchControlsHeight - player.height;
     } else {
         // PC時：通常計算
         player.groundY = height - player.height;
@@ -937,7 +939,10 @@ function update() {
 
     // 背景スクロール
     game.backgroundX -= game.scrollSpeed;
-    if (game.backgroundX <= -game.canvas.width) {
+    
+    // ループリセット（CSS表示サイズを基準に）
+    const resetThreshold = game.canvas.clientWidth;
+    if (game.backgroundX <= -resetThreshold) {
         game.backgroundX = 0;
     }
 
@@ -1136,6 +1141,8 @@ function render() {
         const offsetX = -(bgWidth - displayWidth) / 2;  // 中央揃え用オフセット
         const offsetY = -(bgHeight - displayHeight) / 2;
 
+        // 3つの背景画像を描画してシームレスループを保証
+        ctx.drawImage(images.background, game.backgroundX - displayWidth + offsetX, offsetY, bgWidth, bgHeight);
         ctx.drawImage(images.background, game.backgroundX + offsetX, offsetY, bgWidth, bgHeight);
         ctx.drawImage(images.background, game.backgroundX + displayWidth + offsetX, offsetY, bgWidth, bgHeight);
     } else {
